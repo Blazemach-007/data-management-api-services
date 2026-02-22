@@ -1,9 +1,11 @@
+import { getToken } from './authService';
+
 const API_URL = 'http://localhost:5000/api/transactions';
 
 // Define the payload types for type safety
 export interface BaseTransaction {
     customer_id: string;
-    employee_id: string;
+    // employee_id is now handled by the backend via token
     amount_paid: number;
 }
 
@@ -29,11 +31,16 @@ export interface OtherData extends BaseTransaction {
     description: string;
 }
 
+const getHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${getToken()}`
+});
+
 // Generic function to send data
 const sendTransaction = async (endpoint: string, data: any) => {
     const res = await fetch(`${API_URL}/${endpoint}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(data),
     });
     const json = await res.json();
@@ -49,7 +56,9 @@ export const api = {
 };
 
 export const getTransactions = async () => {
-    const res = await fetch(API_URL);
+    const res = await fetch(API_URL, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
     if (!res.ok) throw new Error('Failed to fetch transactions');
     return res.json();
 };

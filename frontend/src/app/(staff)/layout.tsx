@@ -2,13 +2,22 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { getToken, logout } from '@/services/authService';
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
 
+    useEffect(() => {
+        const token = getToken();
+        if (!token) {
+            router.push('/login');
+        }
+    }, [router]);
+
     const handleLogout = () => {
-        // Clear any stored user data here in the future
+        logout();
         router.push('/login');
     };
 

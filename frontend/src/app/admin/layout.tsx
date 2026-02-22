@@ -2,13 +2,42 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { getToken, logout } from '@/services/authService';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
 
+    useEffect(() => {
+        const token = getToken();
+        if (!token) {
+            router.push('/login');
+            return;
+        }
+
+        // Check if user is admin
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                if (user.role !== 'admin') {
+                    router.push('/login'); 
+                }
+            } catch (e) {
+                // If JSON parse fails, data is corrupt. Logout.
+                logout();
+                router.push('/login');
+            }
+        } else {
+             // Token exists but no user data? Weird. Logout.
+             logout();
+             router.push('/login');
+        }
+    }, [router]);
+
     const handleLogout = () => {
-        // In a real app, clear JWT tokens here
+        logout();
         router.push('/login');
     };
 

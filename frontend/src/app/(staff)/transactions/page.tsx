@@ -1,24 +1,25 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { getCustomers, CustomerData } from '@/services/customerService';
-import { getEmployees, EmployeeData } from '@/services/employeeService';
 import { api } from '@/services/transactionService';
 
 type TabType = 'fastag' | 'aadhaar' | 'insurance' | 'other';
 
 export default function TransactionPage() {
+    const searchParams = useSearchParams();
+    const urlCustomerId = searchParams.get('customerId');
+
     const [activeTab, setActiveTab] = useState<TabType>('fastag');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
 
     // Context Data
     const [customers, setCustomers] = useState<CustomerData[]>([]);
-    const [employees, setEmployees] = useState<EmployeeData[]>([]);
     
     // Selections
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
 
     // Form Data
     const [formData, setFormData] = useState({
@@ -36,14 +37,20 @@ export default function TransactionPage() {
     });
 
     useEffect(() => {
-        getCustomers().then(setCustomers).catch(console.error);
-        getEmployees().then(setEmployees).catch(console.error);
-    }, []);
+        getCustomers().then(data => {
+            setCustomers(data);
+            if (urlCustomerId) {
+                setSelectedCustomerId(urlCustomerId);
+            }
+        }).catch(console.error);
+    }, [urlCustomerId]);
+
+    const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        if (!selectedCustomerId || !selectedEmployeeId) {
-            setMessage({ text: "⚠️ Please select both an Employee and a Customer first.", type: 'error' });
+        if (!selectedCustomerId) {
+            setMessage({ text: "⚠️ No Customer Selected. Please go back.", type: 'error' });
             return;
         }
 
@@ -53,7 +60,6 @@ export default function TransactionPage() {
         try {
             const basePayload = {
                 customer_id: selectedCustomerId,
-                employee_id: selectedEmployeeId,
                 amount_paid: Number(formData.amount_paid)
             };
 
@@ -111,33 +117,18 @@ export default function TransactionPage() {
 
                 {/* --- CONTEXT CARD (Selection) --- */}
                 <div style={styles.card}>
-                    <div style={styles.gridTwo}>
-                        <div style={styles.inputGroup}>
-                            <label style={styles.label}>Logged in Employee</label>
-                            <select 
-                                style={styles.select}
-                                value={selectedEmployeeId}
-                                onChange={e => setSelectedEmployeeId(e.target.value)}
-                            >
-                                <option value="">-- Select Your Name --</option>
-                                {employees.map(e => (
-                                    <option key={e.id} value={e.id}>{e.full_name} ({e.email})</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div style={styles.inputGroup}>
-                            <label style={styles.label}>Customer</label>
-                            <select 
-                                style={styles.select}
-                                value={selectedCustomerId}
-                                onChange={e => setSelectedCustomerId(e.target.value)}
-                            >
-                                <option value="">-- Select Customer --</option>
-                                {customers.map(c => (
-                                    <option key={c.id} value={c.id}>{c.full_name} ({c.phone_number})</option>
-                                ))}
-                            </select>
-                        </div>
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Customer</label>
+                        {selectedCustomer ? (
+                            <div style={styles.readOnlyField}>
+                                <span style={styles.customerName}>{selectedCustomer.full_name}</span>
+                                <span style={styles.customerPhone}>{selectedCustomer.phone_number}</span>
+                            </div>
+                        ) : (
+                            <div style={styles.errorText}>
+                                {urlCustomerId ? 'Loading customer...' : 'No customer selected. Please select one from Customer Management.'}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -495,5 +486,32 @@ const styles: { [key: string]: React.CSSProperties } = {
         backgroundColor: '#fee2e2',
         color: '#991b1b',
         border: '1px solid #fecaca'
+    },
+    // New Styles for Read-Only Field
+    readOnlyField: {
+        padding: '12px 16px',
+        backgroundColor: '#f1f5f9',
+        border: '1px solid #cbd5e1',
+        borderRadius: '8px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        color: '#334155'
+    },
+    customerName: {
+        fontWeight: 'bold',
+        fontSize: '1.05rem',
+        color: '#1e293b'
+    },
+    customerPhone: {
+        fontSize: '0.95rem',
+        color: '#64748b'
+    },
+    errorText: {
+        color: '#dc2626',
+        padding: '10px',
+        backgroundColor: '#fee2e2',
+        borderRadius: '6px',
+        fontSize: '0.9rem'
     }
 };

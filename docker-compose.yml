@@ -1,0 +1,54 @@
+services:
+  # 1. DATABASE SERVICE (PostgreSQL)
+  postgres:
+    image: postgres:15-alpine
+    container_name: data-app-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: data-db
+    ports:
+      - "5432:5432"  # Map container's 5432 to host's 5432 (optional, for local debugging)
+    volumes:
+      - pgdata:/var/lib/postgresql/data  # Persistent storage (data survives container restarts)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. BACKEND SERVICE (Node.js API)
+  backend:
+    build: ./backend
+    container_name: data-app-backend
+    restart: always
+    ports:
+      - "5000:5000"  # Expose API to host
+    environment:
+      PORT: 5000
+      JWT_SECRET: super-secret-key-replace-this-in-production
+      DB_HOST: postgres  # Use service name 'postgres' to connect internally
+      DB_USER: postgres
+      DB_PASS: root
+      DB_NAME: data-db
+    depends_on:
+      postgres:
+        condition: service_healthy # Wait for DB to be ACTUALLY ready
+
+  # 3. FRONTEND SERVICE (Next.js App)
+  frontend:
+    build: ./frontend
+    container_name: data-app-frontend
+    restart: always
+    ports:
+      - "3000:3000"  # Expose Frontend to host
+    environment:
+      # Use localhost:5000 because fetch calls happen in the Browser (Client-Side),
+      # so the browser needs to hit the host machine's port 5000.
+      NEXT_PUBLIC_API_URL: http://localhost:5000
+    depends_on:
+      - backend   # Ideally wait for backend, though Next.js doesn't strictly require it at build time
+
+volumes:
+  pgdata:  # Define volume for DB persistence

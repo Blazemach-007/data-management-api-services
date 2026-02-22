@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getCustomers, CustomerData } from '@/services/customerService';
 import { api } from '@/services/transactionService';
 
 type TabType = 'fastag' | 'aadhaar' | 'insurance' | 'other';
 
-export default function TransactionPage() {
+function TransactionContent() {
     const searchParams = useSearchParams();
     const urlCustomerId = searchParams.get('customerId');
 
@@ -280,6 +280,14 @@ export default function TransactionPage() {
                 </div>
             </div>
         </main>
+    );
+}
+
+export default function TransactionPage() {
+    return (
+        <Suspense fallback={<div style={{padding: '50px', textAlign: 'center'}}>Loading Transaction...</div>}>
+            <TransactionContent />
+        </Suspense>
     );
 }
 

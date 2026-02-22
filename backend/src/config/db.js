@@ -1,15 +1,21 @@
 const { Sequelize, DataTypes } = require('sequelize');
+const bcrypt = require('bcrypt'); // Import bcrypt for password hashing
 
 // 1. SETUP CONNECTION
-const sequelize = new Sequelize('data-db', 'postgres', 'root', {
-    host: 'localhost',
-    dialect: 'postgres',
-    logging: false,
-    define: {
-        timestamps: true, // This ensures 'createdAt' and 'updatedAt' are added to ALL tables automatically
-        freezeTableName: true // Optional: Prevents Sequelize from pluralizing table names (e.g., "Employee" stays "Employee")
+const sequelize = new Sequelize(
+    process.env.DB_NAME || 'data-db', 
+    process.env.DB_USER || 'postgres', 
+    process.env.DB_PASS || 'root', 
+    {
+        host: process.env.DB_HOST || 'localhost',
+        dialect: 'postgres',
+        logging: false,
+        define: {
+            timestamps: true,
+            freezeTableName: true
+        }
     }
-});
+);
 
 // Helper Object for Reusable ID Definition
 // We use this so we don't have to type the same ID code for every table
@@ -105,6 +111,25 @@ const connectDB = async () => {
         // and updates the table structure without deleting data.
         await sequelize.sync({ alter: true }); 
         console.log('✅ All Tables Synced with UUIDs & Timestamps.');
+
+        // --- SEED DEFAULT ADMIN ---
+        const adminCount = await Employee.count();
+        if (adminCount === 0) {
+            console.log('⚠️ No users found. Creating default Admin...');
+            
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash('admin1', salt);
+
+            await Employee.create({
+                email: 'admin1@test.com', // <--- Updated Email
+                password_hash: hashedPassword,
+                role: 'admin',
+                full_name: 'System Administrator',
+                is_active: true
+            });
+            console.log('✅ Default Admin created: Login: admin1@test.com / Pass: admin1');
+        }
+
     } catch (error) {
         console.error('❌ Database Connection Error:', error);
     }

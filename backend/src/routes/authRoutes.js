@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken'); // Import JWT
+const jwt = require('jsonwebtoken');
 const { Employee } = require('../config/db');
+const { verifyToken } = require('../middleware/auth');
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -75,6 +76,17 @@ router.post('/change-password', async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
+});
+
+// GET /api/auth/me — get current logged-in user
+router.get('/me', verifyToken, async (req, res) => {
+    try {
+        const user = await Employee.findByPk(req.user.id, {
+            attributes: { exclude: ['password_hash'] }
+        });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        res.json(user);
+    } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 module.exports = router;

@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt'); 
+const bcrypt = require('bcrypt');
 const { Employee } = require('../config/db');
 const { verifyToken, isAdmin } = require('../middleware/auth');
 
-// Apply verifyToken to all routes
 router.use(verifyToken);
 
-// GET /api/employees - Any logged in user can list employees (for dropdowns etc)
+// GET /api/employees
 router.get('/', async (req, res) => {
     try {
         const employees = await Employee.findAll({
@@ -15,57 +14,55 @@ router.get('/', async (req, res) => {
             order: [['createdAt', 'DESC']]
         });
         res.json(employees);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+    } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// POST /api/employees - Only Admins can create new users
+// GET /api/employees/:id
+router.get('/:id', async (req, res) => {
+    try {
+        const employee = await Employee.findByPk(req.params.id, {
+            attributes: { exclude: ['password_hash'] }
+        });
+        if (!employee) return res.status(404).json({ message: 'Employee not found' });
+        res.json(employee);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// POST /api/employees — admin only
 router.post('/', isAdmin, async (req, res) => {
     try {
-        const { email, password, full_name, role } = req.body;
-
-        // 1. Check if email exists (Changed from username)
+        const { email, password, full_name, role, phone } = req.body;
         const exists = await Employee.findOne({ where: { email } });
-        if (exists) {
-            return res.status(400).json({ message: 'Email already exists' });
-        }
-
-        // 2. Hash the password
-        const salt = await bcrypt.genSalt(10);
-        const password_hash = await bcrypt.hash(password, salt);
-
-        // 3. Create Employee
-        const newEmployee = await Employee.create({
-            email,             // <--- Using email
-            password_hash,
-            full_name,
-            role: role || 'staff'
+        if (exists) return res.status(400).json({ message: 'Email already in use' });
+        const password_hash = await bcrypt.hash(password, 10);
+        const employee = await Employee.create({ email, password_hash, full_name, role: role || 'staff', phone });
+        res.status(201).json({
+            id: employee.id, email: employee.email,
+            full_name: employee.full_name, role: employee.role
         });
-
-        // 4. Return success (Fixed variable in response)
-        res.status(201).json({ 
-            message: 'User created successfully', 
-            user: { email, full_name, role } 
-        });
-
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+    } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// DELETE /api/employees/:id - Only Admins can delete users
+// PUT /api/employees/:id — admin only
+router.put('/:id', isAdmin, async (req, res) => {
+    try {
+        const employee = await Employee.findByPk(req.params.id);
+        if (!employee) return res.status(404).json({ message: 'Employee not found' });
+        const { password, ...rest } = req.body;
+        if (password) rest.password_hash = await bcrypt.hash(password, 10);
+        await employee.update(rest);
+        const { password_hash, ...safe } = employee.toJSON();
+        res.json(safe);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// DELETE /api/employees/:id — admin only
 router.delete('/:id', isAdmin, async (req, res) => {
     try {
-        const { id } = req.params;
-        const deleted = await Employee.destroy({ where: { id } });
-
-        if (!deleted) return res.status(404).json({ message: 'User not found' });
-
-        res.json({ message: 'User removed successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+        const deleted = await Employee.destroy({ where: { id: req.params.id } });
+        if (!deleted) return res.status(404).json({ message: 'Employee not found' });
+        res.json({ message: 'Employee deleted' });
+    } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 module.exports = router;

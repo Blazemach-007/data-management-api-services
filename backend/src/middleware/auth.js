@@ -1,30 +1,33 @@
 const jwt = require('jsonwebtoken');
 
-// Middleware to verify if a user is logged in
 const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Extract token from "Bearer <token>"
-
-    if (!token) {
-        return res.status(401).json({ message: 'Access denied. No token provided.' });
-    }
-
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'Access denied. No token provided.' });
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
-        req.user = decoded; // Add user info to the request object
+        req.user = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
         next();
-    } catch (error) {
+    } catch {
         res.status(403).json({ message: 'Invalid or expired token.' });
     }
 };
 
-// Middleware to check if the user is an admin
+// alias — some routes use 'authenticate'
+const authenticate = verifyToken;
+
 const isAdmin = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
-        next();
-    } else {
-        res.status(403).json({ message: 'Access denied. Admin rights required.' });
-    }
+    if (req.user?.role === 'admin') return next();
+    res.status(403).json({ message: 'Admin access required.' });
 };
 
-module.exports = { verifyToken, isAdmin };
+const isManagerOrAdmin = (req, res, next) => {
+    if (['admin', 'manager'].includes(req.user?.role)) return next();
+    res.status(403).json({ message: 'Manager or Admin access required.' });
+};
+
+const requireRole = (roles) => (req, res, next) => {
+    if (roles.includes(req.user?.role)) return next();
+    res.status(403).json({ message: `Access restricted to: ${roles.join(', ')}` });
+};
+
+module.exports = { verifyToken, authenticate, isAdmin, isManagerOrAdmin, requireRole };

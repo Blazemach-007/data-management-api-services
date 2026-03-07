@@ -1,36 +1,44 @@
-require('dotenv').config(); // Load environment variables
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { connectDB } = require('./src/config/db');
-const customerRoutes = require('./src/routes/customerRoutes');
-const employeeRoutes = require('./src/routes/employeeRoutes');
-const transactionRoutes = require('./src/routes/transactionRoutes');
-const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();
-const PORT = 5000; // Use 5000 to match your frontend request
+const PORT = process.env.PORT || 5000;
+const HOST = '0.0.0.0'; // LAN accessible
 
-// Middleware
-app.use(cors()); 
+app.use(cors());
 app.use(express.json());
 
-// --- ROUTES ---
+// Serve generated invoices as static files
+app.use('/invoices', express.static(path.join(__dirname, 'invoices')));
 
-// 1. Health/Test Route (The one you asked for)
+// ─── HEALTH CHECK ──────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: "success", 
-        message: "Backend is connected to PostgreSQL and running!" 
-    });
+    res.json({ status: 'success', message: 'CareAll backend is running.' });
 });
 
-app.use('/api/customers', customerRoutes);
-app.use('/api/employees', employeeRoutes);
-app.use('/api/transactions', transactionRoutes);
-app.use('/api/auth', authRoutes);
+// ─── ROUTES ────────────────────────────────────────────────────
+app.use('/api/auth',         require('./src/routes/authRoutes'));
+app.use('/api/customers',    require('./src/routes/customerRoutes'));
+app.use('/api/employees',    require('./src/routes/employeeRoutes'));
+app.use('/api/fastag',       require('./src/routes/fastagRoutes'));
+app.use('/api/pancard',      require('./src/routes/pancardRoutes'));
+app.use('/api/dsc',          require('./src/routes/dscRoutes'));
+app.use('/api/insurance',    require('./src/routes/insuranceRoutes'));
+app.use('/api/aadhaar',      require('./src/routes/aadhaarRoutes'));
+app.use('/api/other',        require('./src/routes/otherRoutes'));
+app.use('/api/transactions', require('./src/routes/transactionRoutes'));
+app.use('/api/invoices',     require('./src/routes/invoiceRoutes'));
+app.use('/api/reports',      require('./src/routes/reportRoutes'));
+app.use('/api/inventory',    require('./src/routes/inventoryRoutes'));
+app.use('/api/followups',    require('./src/routes/followupRoutes'));
 
-// Start Server
-app.listen(PORT, async () => {
-    console.log(`🚀 Server running on http://127.0.0.1:${PORT}`);
-    await connectDB(); // This triggers the DB connection and table creation
+// ─── START ─────────────────────────────────────────────────────
+app.listen(PORT, HOST, async () => {
+    console.log(`\n🚀 CareAll backend running on http://localhost:${PORT}`);
+    console.log(`   LAN access: http://<your-ip>:${PORT}\n`);
+    await connectDB();
+    require('./src/scheduler');
 });

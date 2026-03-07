@@ -2,106 +2,84 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { getToken, logout } from '@/services/authService';
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
+    const [role, setRole] = useState<string>('staff');
 
     useEffect(() => {
         const token = getToken();
-        if (!token) {
-            router.push('/login');
+        if (!token) { router.push('/login'); return; }
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                setRole(user.role);
+                if (user.role === 'admin') router.push('/admin/dashboard');
+            } catch { logout(); router.push('/login'); }
         }
     }, [router]);
 
-    const handleLogout = () => {
-        logout();
-        router.push('/login');
-    };
+    const handleLogout = () => { logout(); router.push('/login'); };
+    const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
 
     const navItems = [
-        { name: 'Customer Management', path: '/customers' },
-        { name: 'Transaction', path: '/transactions' }
-        
+        { name: 'Customers', path: '/customers', icon: '👥', roles: ['staff', 'manager', 'admin'] },
+        { name: 'Fastag', path: '/services/fastag', icon: '🚗', roles: ['staff', 'manager', 'admin'] },
+        { name: 'PAN Card', path: '/services/pancard', icon: '🪪', roles: ['staff', 'manager', 'admin'] },
+        { name: 'DSC', path: '/services/dsc', icon: '🔐', roles: ['staff', 'manager', 'admin'] },
+        { name: 'Insurance', path: '/services/insurance', icon: '🛡️', roles: ['staff', 'manager', 'admin'] },
+        { name: 'Aadhaar', path: '/services/aadhaar', icon: '📋', roles: ['staff', 'manager', 'admin'] },
+        { name: 'Other', path: '/services/other', icon: '📦', roles: ['staff', 'manager', 'admin'] },
+        { name: 'Expiry', path: '/expiry-tracker', icon: '⏰', roles: ['staff', 'manager', 'admin'] },
+        { name: 'Billing', path: '/billing', icon: '🧾', roles: ['staff', 'manager', 'admin'] },
+        { name: 'Reports', path: '/reports', icon: '📈', roles: ['manager', 'admin'] },
+        { name: 'Inventory', path: '/inventory', icon: '📦', roles: ['manager', 'admin'] },
     ];
 
+    const visibleItems = navItems.filter(item => item.roles.includes(role));
+
     return (
-        <div style={styles.layout}>
-            {/* TOP NAVIGATION BAR */}
-            <nav style={styles.navbar}>
-                <div style={styles.navContainer}>
-                    <div style={styles.logoSection}>
-                        <span style={styles.logoText}>🚀 Staff Portal</span>
+        <div style={s.layout}>
+            <nav style={s.navbar}>
+                <div style={s.navContainer}>
+                    <div style={s.logo}>
+                        <span style={s.logoText}>CareAll Digital Services</span>
+                        <span style={{ ...s.roleBadge, backgroundColor: role === 'manager' ? '#7c3aed' : '#2563eb' }}>
+                            {role.toUpperCase()}
+                        </span>
                     </div>
-                    
-                    <div style={styles.linksSection}>
-                        {navItems.map((item) => {
-                            const isActive = pathname === item.path || pathname.startsWith(`${item.path}/`);
-                            return (
-                                <Link 
-                                    key={item.name} 
-                                    href={item.path}
-                                    style={{
-                                        ...styles.navLink,
-                                        ...(isActive ? styles.activeLink : {})
-                                    }}
-                                >
-                                    {item.name}
-                                </Link>
-                            );
-                        })}
-                        <button onClick={handleLogout} style={styles.logoutBtn}>
-                            Logout
-                        </button>
+                    <div style={s.links}>
+                        {visibleItems.map(item => (
+                            <Link key={item.path} href={item.path} style={{
+                                ...s.link,
+                                ...(isActive(item.path) ? s.activeLink : {})
+                            }}>
+                                {item.icon} {item.name}
+                            </Link>
+                        ))}
+                        <button onClick={handleLogout} style={s.logoutBtn}>Logout</button>
                     </div>
                 </div>
             </nav>
-
-            {/* PAGE CONTENT */}
-            <div style={styles.pageContent}>
-                {children}
-            </div>
+            <div style={s.content}>{children}</div>
         </div>
     );
 }
 
-// --- STYLES ---
-const styles: { [key: string]: React.CSSProperties } = {
-    layout: { minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' },
-    navbar: { 
-        backgroundColor: '#2563eb', // Blue theme for Staff
-        padding: '0 20px', 
-        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', 
-        position: 'sticky', 
-        top: 0, 
-        zIndex: 50 
-    },
-    navContainer: { maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '70px' },
-    logoSection: { display: 'flex', alignItems: 'center' },
-    logoText: { color: '#ffffff', fontSize: '1.25rem', fontWeight: '800', letterSpacing: '0.5px' },
-    linksSection: { display: 'flex', gap: '20px', alignItems: 'center' },
-    navLink: { 
-        color: '#bfdbfe', // Light blue unselected
-        textDecoration: 'none', 
-        fontWeight: '600', 
-        fontSize: '0.95rem', 
-        padding: '8px 12px', 
-        borderRadius: '6px', 
-        transition: 'all 0.2s' 
-    },
-    activeLink: { color: '#2563eb', backgroundColor: '#ffffff' }, // White background when active
-    logoutBtn: { 
-        backgroundColor: '#1d4ed8', // Darker blue for logout
-        color: 'white', 
-        border: 'none', 
-        padding: '8px 16px', 
-        borderRadius: '6px', 
-        fontWeight: 'bold', 
-        cursor: 'pointer', 
-        marginLeft: '10px', 
-        transition: 'background-color 0.2s' 
-    },
-    pageContent: { padding: '0' } 
+const s: { [k: string]: React.CSSProperties } = {
+    layout: { minHeight: '100vh', backgroundColor: '#f1f5f9', fontFamily: 'system-ui, -apple-system, sans-serif' },
+    navbar: { backgroundColor: '#1e3a5f', padding: '0 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', position: 'sticky', top: 0, zIndex: 50 },
+    navContainer: { maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '60px' },
+    logo: { display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 },
+    logoText: { color: '#f59e0b', fontSize: '1rem', fontWeight: '800', whiteSpace: 'nowrap' },
+    roleBadge: { color: '#fff', fontSize: '0.65rem', fontWeight: 'bold', padding: '2px 8px', borderRadius: '12px' },
+    links: { display: 'flex', gap: '2px', alignItems: 'center', overflowX: 'auto', flexWrap: 'nowrap' },
+    link: { color: '#94a3b8', textDecoration: 'none', fontWeight: '500', fontSize: '0.8rem', padding: '5px 7px', borderRadius: '5px', whiteSpace: 'nowrap', transition: 'all 0.2s' },
+    activeLink: { color: '#fff', backgroundColor: '#f59e0b20', borderBottom: '2px solid #f59e0b' },
+    logoutBtn: { backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginLeft: '8px', flexShrink: 0, fontSize: '0.8rem' },
+    content: { padding: '0' }
 };

@@ -43,7 +43,7 @@ export default function LoginPage() {
             // ROLE-BASED ROUTING
             setTimeout(() => {
                 if (result.user.role === 'admin') {
-                    router.push('/admin/transactions'); // Admins go to dashboard
+                    router.push('/admin/dashboard');
                 } else {
                     router.push('/customers'); // Staff go to data entry
                 }
@@ -93,7 +93,7 @@ export default function LoginPage() {
             <div style={styles.card}>
                 
                 <div style={styles.header}>
-                    <h1 style={styles.title}>Fastag Tracker</h1>
+                    <h1 style={styles.title}>CareAll Digital Services</h1>
                     <div style={{
                         ...styles.statusBadge, 
                         ...(serverStatus === 'Online' ? styles.statusOnline : styles.statusOffline)

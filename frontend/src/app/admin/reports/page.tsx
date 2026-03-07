@@ -91,7 +91,7 @@ export default function ReportsPage() {
                     {monthly.length === 0 ? <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No data for this period</div> : (
                         <ResponsiveContainer width="100%" height={250}>
                             <PieChart>
-                                <Pie data={monthly} dataKey="count" nameKey="service_type" cx="50%" cy="50%" outerRadius={90} label={({ service_type, percent }) => `${service_type} ${(percent * 100).toFixed(0)}%`}>
+                                <Pie data={monthly} dataKey="count" nameKey="service_type" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}>
                                     {monthly.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                                 </Pie>
                                 <Tooltip />

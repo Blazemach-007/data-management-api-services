@@ -31,7 +31,7 @@ const Employee = sequelize.define('Employee', {
     id: uuidPK,
     email: { type: DataTypes.STRING, allowNull: false, unique: true },
     password_hash: { type: DataTypes.STRING, allowNull: false },
-    role: { type: DataTypes.ENUM('admin', 'manager', 'staff'), defaultValue: 'staff' },
+    role: { type: DataTypes.STRING, defaultValue: 'staff' },
     full_name: { type: DataTypes.STRING, allowNull: false },
     phone: { type: DataTypes.STRING },
     is_active: { type: DataTypes.BOOLEAN, defaultValue: true }
@@ -56,7 +56,7 @@ const ServiceFastag = sequelize.define('Service_Fastag', {
     tag_id: { type: DataTypes.STRING },
     chassis_no: { type: DataTypes.STRING },
     amount: { type: DataTypes.FLOAT, allowNull: false },
-    status: { type: DataTypes.ENUM('Pending', 'Completed', 'Rejected'), defaultValue: 'Completed' },
+    status: { type: DataTypes.STRING, defaultValue: 'Completed' },
     notes: { type: DataTypes.TEXT }
 });
 
@@ -66,9 +66,9 @@ const ServicePancard = sequelize.define('Service_Pancard', {
     applicant_name: { type: DataTypes.STRING, allowNull: false },
     dob: { type: DataTypes.DATEONLY },
     father_name: { type: DataTypes.STRING },
-    form_type: { type: DataTypes.ENUM('49A', '49AA'), defaultValue: '49A' },
+    form_type: { type: DataTypes.STRING, defaultValue: '49A' },
     amount: { type: DataTypes.FLOAT, allowNull: false },
-    status: { type: DataTypes.ENUM('Pending', 'Submitted', 'Completed', 'Rejected'), defaultValue: 'Pending' },
+    status: { type: DataTypes.STRING, defaultValue: 'Pending' },
     notes: { type: DataTypes.TEXT }
 });
 
@@ -80,8 +80,8 @@ const ServiceDSC = sequelize.define('Service_DSC', {
     expiry_date: { type: DataTypes.DATEONLY },
     authority: { type: DataTypes.STRING },
     amount: { type: DataTypes.FLOAT, allowNull: false },
-    status: { type: DataTypes.ENUM('Active', 'Expired', 'Renewed'), defaultValue: 'Active' },
-    follow_up_status: { type: DataTypes.ENUM('None', 'Pending', 'Contacted', 'Done'), defaultValue: 'None' },
+    status: { type: DataTypes.STRING, defaultValue: 'Active' },
+    follow_up_status: { type: DataTypes.STRING, defaultValue: 'None' },
     last_contact_date: { type: DataTypes.DATEONLY },
     notes: { type: DataTypes.TEXT }
 });
@@ -90,12 +90,12 @@ const ServiceInsurance = sequelize.define('Service_Insurance', {
     id: uuidPK,
     policy_number: { type: DataTypes.STRING, unique: true },
     provider: { type: DataTypes.STRING },
-    policy_type: { type: DataTypes.ENUM('Life', 'Vehicle', 'Health', 'Other'), defaultValue: 'Vehicle' },
+    policy_type: { type: DataTypes.STRING, defaultValue: 'Vehicle' },
     premium: { type: DataTypes.FLOAT },
     expiry_date: { type: DataTypes.DATEONLY },
     amount: { type: DataTypes.FLOAT, allowNull: false },
-    status: { type: DataTypes.ENUM('Active', 'Expired', 'Renewed', 'Cancelled'), defaultValue: 'Active' },
-    follow_up_status: { type: DataTypes.ENUM('None', 'Pending', 'Contacted', 'Done'), defaultValue: 'None' },
+    status: { type: DataTypes.STRING, defaultValue: 'Active' },
+    follow_up_status: { type: DataTypes.STRING, defaultValue: 'None' },
     last_contact_date: { type: DataTypes.DATEONLY },
     notes: { type: DataTypes.TEXT }
 });
@@ -106,7 +106,7 @@ const ServiceAadhaar = sequelize.define('Service_Aadhaar', {
     update_type: { type: DataTypes.STRING },
     request_id: { type: DataTypes.STRING },
     amount: { type: DataTypes.FLOAT, defaultValue: 0.0 },
-    status: { type: DataTypes.ENUM('Pending', 'Submitted', 'Completed', 'Rejected'), defaultValue: 'Pending' },
+    status: { type: DataTypes.STRING, defaultValue: 'Pending' },
     notes: { type: DataTypes.TEXT }
 });
 
@@ -115,7 +115,7 @@ const ServiceOther = sequelize.define('Service_Other', {
     service_name: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.TEXT },
     amount: { type: DataTypes.FLOAT, allowNull: false },
-    status: { type: DataTypes.ENUM('Pending', 'Completed'), defaultValue: 'Completed' },
+    status: { type: DataTypes.STRING, defaultValue: 'Completed' },
     notes: { type: DataTypes.TEXT }
 });
 
@@ -124,13 +124,13 @@ const ServiceOther = sequelize.define('Service_Other', {
 const Transaction = sequelize.define('Transaction', {
     id: uuidPK,
     service_type: {
-        type: DataTypes.ENUM('Fastag', 'Pancard', 'DSC', 'Insurance', 'Aadhaar', 'Other'),
+        type: DataTypes.STRING,
         allowNull: false
     },
     service_id: { type: DataTypes.UUID, allowNull: false },
     amount: { type: DataTypes.FLOAT, allowNull: false },
-    payment_method: { type: DataTypes.ENUM('Cash', 'UPI', 'Card', 'NetBanking', 'Other'), defaultValue: 'Cash' },
-    payment_status: { type: DataTypes.ENUM('Paid', 'Pending', 'Failed'), defaultValue: 'Paid' },
+    payment_method: { type: DataTypes.STRING, defaultValue: 'Cash' },
+    payment_status: { type: DataTypes.STRING, defaultValue: 'Paid' },
     notes: { type: DataTypes.TEXT }
 });
 
@@ -138,7 +138,7 @@ const Invoice = sequelize.define('Invoice', {
     id: uuidPK,
     invoice_number: { type: DataTypes.STRING, unique: true },
     pdf_path: { type: DataTypes.STRING },
-    status: { type: DataTypes.ENUM('Generated', 'Sent', 'Cancelled'), defaultValue: 'Generated' }
+    status: { type: DataTypes.STRING, defaultValue: 'Generated' }
 });
 
 const Inventory = sequelize.define('Inventory', {
@@ -153,17 +153,17 @@ const Inventory = sequelize.define('Inventory', {
 
 const InventoryTransaction = sequelize.define('Inventory_Transaction', {
     id: uuidPK,
-    type: { type: DataTypes.ENUM('in', 'out'), allowNull: false },
+    type: { type: DataTypes.STRING, allowNull: false },
     quantity: { type: DataTypes.INTEGER, allowNull: false },
     reason: { type: DataTypes.STRING }
 });
 
 const FollowUp = sequelize.define('FollowUp', {
     id: uuidPK,
-    service_type: { type: DataTypes.ENUM('DSC', 'Insurance'), allowNull: false },
+    service_type: { type: DataTypes.STRING, allowNull: false },
     service_id: { type: DataTypes.UUID, allowNull: false },
     expiry_date: { type: DataTypes.DATEONLY },
-    status: { type: DataTypes.ENUM('Pending', 'Contacted', 'Done', 'Ignored'), defaultValue: 'Pending' },
+    status: { type: DataTypes.STRING, defaultValue: 'Pending' },
     last_contact_date: { type: DataTypes.DATEONLY },
     notes: { type: DataTypes.TEXT }
 });
@@ -172,7 +172,7 @@ const SmsLog = sequelize.define('SmsLog', {
     id: uuidPK,
     phone_number: { type: DataTypes.STRING, allowNull: false },
     message: { type: DataTypes.TEXT, allowNull: false },
-    status: { type: DataTypes.ENUM('Sent', 'Failed', 'Pending'), defaultValue: 'Pending' },
+    status: { type: DataTypes.STRING, defaultValue: 'Pending' },
     provider_response: { type: DataTypes.TEXT }
 });
 
